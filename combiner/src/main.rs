@@ -59,8 +59,8 @@ fn main() -> Result <(), ImageDataErrors>{
     println!("Hello, world!");
 
     // Let's find the image_path and image_format from the Command Line arguments
-    let (image_1, image_1_format) = find_image_from_path(args.image_1);
-    let (image_2, image_2_format) = find_image_from_path(args.image_2);
+    let (image_1, image_1_format) = find_image_from_path(args.image_1)?;
+    let (image_2, image_2_format) = find_image_from_path(args.image_2)?;
 
     if image_1_format != image_2_format {
         return Err(ImageDataErrors::DifferentImageFormats);
@@ -86,12 +86,12 @@ fn main() -> Result <(), ImageDataErrors>{
     Ok(())
 }
 
-fn find_image_from_path(path: String) -> (DynamicImage, ImageFormat) {
+fn find_image_from_path(path: String) -> Result<(DynamicImage, ImageFormat), ImageDataErrors> {
     match Reader::open(path) {
         Ok(image_reader) => {
             let image_format: ImageFormat = image_reader.format().unwrap();
             let image: DynamicImage = image_reader.decode().unwrap();
-            (image, image_format)
+            Ok((image, image_format))
         },
         Err(e) => Err(ImageDataErrors::UnableToReadImageFromPath(e))
     }
