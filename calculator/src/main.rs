@@ -42,15 +42,17 @@ fn main() {
     // let result: f32 = operate(operator, first_number, second_number); // This will throw an error since function `operate` expects `operator` to be a char value but `operator` is a `String` value right now.
                                                                     //  we need to convert the `operator` string into char. Which we do in line 45.
 
-    let result: f32 = operate(operator.chars().next().unwrap(), first_number, second_number); // chars is a method on Strings and next is basically a method to access the iterator and unwrap simply presents the value of the char
+    let if_else_result: f32 = if_else_operate(operator.chars().next().unwrap(), first_number, second_number); // chars is a method on Strings and next is basically a method to access the iterator and unwrap simply presents the value of the char
+    let result: f32 = operate(operator.chars().next().unwrap(), first_number, second_number);
 
     println!("6. {} {}", first_number, second_number);
-    println!("The result of this operation is\n {:#?}", result);
+    println!("The result of this operation is\n {:#?}", if_else_result);
 
+    println!("{:#?}", output(first_number, operator.chars().next().unwrap(), second_number, if_else_result));
     println!("{:#?}", output(first_number, operator.chars().next().unwrap(), second_number, result));
 }
 
-fn operate(operator: char, first_number: f32, second_number: f32) -> f32 {
+fn if_else_operate(operator: char, first_number: f32, second_number: f32) -> f32 {
     if operator == '+'  {
         first_number + second_number // No `return` keyword and `;` required in Rust, as Rust has implicit return policy
     } else if operator == '-'  { 
@@ -61,6 +63,17 @@ fn operate(operator: char, first_number: f32, second_number: f32) -> f32 {
         first_number / second_number
     } else {
         0.0 // Ideally we would have wanted to panick or return an error here, but since the return type of this function is f32, we would make do with 0.0 for now.
+    }
+}
+
+// Instead of the bunch of if-else statments used in the function `if_else_operate` in line 53, we can use Rust's Match Control Flow
+fn operate(operator: char, first_number: f32, second_number: f32) -> f32 {
+    match operator {
+        '+' => first_number + second_number,
+        '-' => first_number - second_number,
+        '*' => first_number * second_number,
+        '/' => first_number / second_number,
+        _ => 0.0 // This is the base case. Without this, the Match will throw a compilation error.
     }
 }
 
