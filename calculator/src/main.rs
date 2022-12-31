@@ -71,9 +71,10 @@ fn operate(operator: char, first_number: f32, second_number: f32) -> f32 {
     match operator {
         '+' => first_number + second_number,
         '-' => first_number - second_number,
-        '*' => first_number * second_number,
+        '*' | 'x' | 'X' => first_number * second_number,
         '/' => first_number / second_number,
-        _ => 0.0 // This is the base case. Without this, the Match will throw a compilation error.
+        // _ => 0.0 // This is the base case. Without this, the Match will throw a compilation error. But since 0.0 does not make much sense in case of an invalid operator, we would be better of panicking in this situation, so let's do that
+        _ => panic!("Invalid operator used")
     }
 }
 
