@@ -10,3 +10,14 @@ pub struct Args {
     pub image_2: String,
     pub output: String
 }
+
+impl Args {
+    // Again since we want the new function to be accessible to people outside of this module(file) too, we declare it as public
+    pub fn new() -> Self {
+        Args{
+            image_1: String::new(),
+            image_2: String::new(),
+            output: String::new()
+        }
+    }
+}
