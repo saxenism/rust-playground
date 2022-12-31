@@ -1,1 +1,1 @@
-/home/marlin/Desktop/rust_projects/calculator/target/release/calculator: /home/marlin/Desktop/rust_projects/calculator/src/main.rs
+/Users/saxenism/Desktop/Rust/rust-playground/calculator/target/release/calculator: /Users/saxenism/Desktop/Rust/rust-playground/calculator/src/main.rs
