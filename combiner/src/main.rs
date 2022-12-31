@@ -1,8 +1,6 @@
 mod args;
 
 use args::Args;
-use std::fs::File;
-use std::io::BufReader;
 use std::convert::TryInto;
 use image::{io::Reader, DynamicImage, ImageFormat, GenericImageView, imageops::Triangle};
 
@@ -10,6 +8,7 @@ use image::{io::Reader, DynamicImage, ImageFormat, GenericImageView, imageops::T
 enum ImageDataErrors {
     DifferentImageFormats,
     BufferTooSmall,
+    UnableToReadImageFromPath(std::io::Error)
 }
 
 struct FloatingImage {
@@ -88,10 +87,14 @@ fn main() -> Result <(), ImageDataErrors>{
 }
 
 fn find_image_from_path(path: String) -> (DynamicImage, ImageFormat) {
-    let image_reader: Reader<BufReader<File>> = Reader::open(path).unwrap();
-    let image_format: ImageFormat = image_reader.format().unwrap();
-    let image: DynamicImage = image_reader.decode().unwrap();
-    (image, image_format)
+    match Reader::open(path) {
+        Ok(image_reader) => {
+            let image_format: ImageFormat = image_reader.format().unwrap();
+            let image: DynamicImage = image_reader.decode().unwrap();
+            (image, image_format)
+        },
+        Err(e) => Err(ImageDataErrors::UnableToReadImageFromPath(e))
+    }
 }
 
 fn get_smaller_dimensions(dim1: (u32, u32), dim2: (u32, u32)) -> (u32, u32) {
