@@ -3,11 +3,32 @@ mod args;
 use args::Args;
 use std::fs::File;
 use std::io::BufReader;
+use std::convert::TryInto;
 use image::{io::Reader, DynamicImage, ImageFormat, GenericImageView, imageops::Triangle};
 
 #[derive(Debug)]
 enum ImageDataErrors {
     DifferentImageFormats,
+}
+
+struct FloatingImage {
+    width: u32,
+    height: u32,
+    data: Vec<u8>,
+    name: String
+}
+
+impl FloatingImage {
+    fn new(width: u32, height: u32, name: String) -> Self {
+        let buffer_capacity = width * height * 4; // 4 is used becase of RGBA format of images. buffer_capacity is basically counting the number of pixels
+        let buffer = Vec::with_capacity(buffer_capacity.try_into().unwrap());
+        FloatingImage {
+            width,
+            height,
+            data: buffer,
+            name
+        }
+    }
 }
 
 fn main() -> Result <(), ImageDataErrors>{
@@ -38,7 +59,7 @@ fn main() -> Result <(), ImageDataErrors>{
 
     // This will resize the larger image to the dimensions of the smaller image
     let(image_1, image_2) = standardise_image_size(image_1, image_2);
-
+    let output = FloatingImage::new(image_1.width(), image_2.height(), args.output);
     Ok(())
 }
 
