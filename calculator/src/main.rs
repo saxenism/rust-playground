@@ -46,6 +46,8 @@ fn main() {
 
     println!("6. {} {}", first_number, second_number);
     println!("The result of this operation is\n {:#?}", result);
+
+    println!("{:#?}", output(first_number, operator.chars().next().unwrap(), second_number, result));
 }
 
 fn operate(operator: char, first_number: f32, second_number: f32) -> f32 {
@@ -60,4 +62,9 @@ fn operate(operator: char, first_number: f32, second_number: f32) -> f32 {
     } else {
         0.0 // Ideally we would have wanted to panick or return an error here, but since the return type of this function is f32, we would make do with 0.0 for now.
     }
+}
+
+// Formatting the output
+fn output(first_number: f32, operator: char, second_number: f32, result: f32) -> String {
+    format!("{} {} {} = {}", first_number, operator, second_number, result)
 }
