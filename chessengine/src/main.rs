@@ -14,6 +14,269 @@
 
 type PiecePosition = u64; // setting an alias for u64
 
+/*
+    In Rust, #[derive(Trait)] is a syntax for automatically implementing certain traits for a type. A trait is a Rust language feature that defines a set of methods that a type can implement.
+    The derive attribute allows you to automatically implement one or more traits for a type, without having to write the implementation manually.
+
+    The Debug trait is a built-in trait that allows a type to be formatted using the {:?} syntax in the format! macro and the dbg! macro. This is useful for debugging, as it allows you to print a value's internal state in a human-readable form.
+
+    The PartialEq trait is a built-in trait that allows a type to be compared for equality using the == and != operators. This is useful for testing and other situations where you need to compare values for equality.
+*/
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+enum Color {
+    White, 
+    Black
+}
+
+#[derive(Debug, PartialEq)]
+enum PieceType {
+    Pawn, 
+    Rook,
+    Knight,
+    Bishop,
+    Queen,
+    King
+}
+
+#[derive(Debug, PartialEq)]
+struct Piece {
+    position: PiecePosition,
+    color: Color,
+    piece_type: PieceType
+}
+
+#[derive(Debug)]
+enum Square {
+    Empty,
+    Occupied(usize), // This usize is used to denote the piece index.
+}
+
+// Game type to own the data
+struct Game {
+    pieces: Vec<Piece>,
+    squares: Vec<Square>
+}
+
+impl Game {
+
+    fn push_piece_and_square(
+        &mut self,
+        position: usize,
+        color: Color,
+        piece_type: PieceType,
+        index: &mut usize
+    ) {
+        self.pieces.push(
+            Piece{
+                position: (1 as u64) << position,
+                color: color,
+                piece_type: piece_type
+            }
+        );
+
+        self.squares.push(
+            Square::Occupied(*index)
+        );
+
+        *index += 1;
+    }
+    
+    // &mut self, since we are changing the struct `Game` itself with this function
+    fn push_empty_square(&mut self) {
+        self.squares.push(Square::Empty);
+    }
+
+    fn initialize() -> Game {
+        let mut game = Game {pieces: vec![], squares: vec![]};
+        let mut piece_index = 0;
+
+        let mut color = Color::White;
+
+        game.push_piece_and_square(
+            0,
+            color,
+            PieceType::Rook,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            1,
+            color,
+            PieceType::Knight,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            2,
+            color,
+            PieceType::Bishop,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            3,
+            color,
+            PieceType::Queen,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            4,
+            color,
+            PieceType::King,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            5,
+            color,
+            PieceType::Bishop,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            6,
+            color,
+            PieceType::Knight,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            7,
+            color,
+            PieceType::Rook,
+            &mut piece_index
+        );
+
+        for i in 8..16 {
+            game.push_piece_and_square(
+                i, 
+                color,
+                PieceType::Pawn,
+                &mut piece_index
+            );
+        }
+
+        // Pushing the empty square in between the two opponents
+        for i in 16..48 {
+            game.push_empty_square();
+        }
+
+        color = Color::Black;
+
+        for i in 48..56 {
+            game.push_piece_and_square(
+                i, 
+                color,
+                PieceType::Pawn,
+                &mut piece_index
+            );
+        }
+
+        let offset = 56;
+
+        game.push_piece_and_square(
+            0 + offset,
+            color,
+            PieceType::Rook,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            1 + offset,
+            color,
+            PieceType::Knight,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            2 + offset,
+            color,
+            PieceType::Bishop,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            3 + offset,
+            color,
+            PieceType::Queen,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            4 + offset,
+            color,
+            PieceType::King,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            5 + offset,
+            color,
+            PieceType::Bishop,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            6 + offset,
+            color,
+            PieceType::Knight,
+            &mut piece_index
+        );
+
+        game.push_piece_and_square(
+            7 + offset,
+            color,
+            PieceType::Rook,
+            &mut piece_index
+        );
+
+        game
+    }
+
+    fn to_string(&self) -> String {
+       let mut board = "".to_owned();
+       let mut temp = "".to_owned(); 
+
+       for (i, square) in self.squares.iter().enumerate() {
+        match square {
+            Square::Empty => temp.push_str(&index_to_position(i)),
+            Square::Occupied(idx) => temp.push_str(&self.pieces[*idx].to_string()),
+        }
+        
+        if(i + 1 ) % 8 == 0 {
+            temp.push_str("\n");
+            board.insert_str(0, &temp);
+            temp.clear();
+        }
+       }
+       // incase the if block was not activated
+       board.insert_str(0, &temp);
+       
+       board // return the value of board
+    }
+}
+
+impl Piece {
+    fn to_string(&self) -> String {
+        let mut result = match self.piece_type {
+            PieceType::Pawn => "p ",
+            PieceType::Rook => "r ",
+            PieceType::Knight => "n ",
+            PieceType::Bishop => "b ",
+            PieceType::Queen => "q ",
+            PieceType::King => "k "
+        }.to_string();
+
+        if self.color == Color::White {
+            result.make_ascii_uppercase();
+        }
+
+        result
+    }
+}
+
 #[derive(Debug)]
 enum PiecePositionErrors {
     EmptyBitString,
@@ -119,8 +382,8 @@ fn bit_to_position(bit_string: PiecePosition) -> Result <String, PiecePositionEr
 */
 fn index_to_position(bit_string: usize) -> String {
     let col = bit_string % 8;
-    let row = bit_string / 1;
-    format!("{}{}", COL_MAP[col], row)
+    let row = bit_string / 8 + 1;
+    format!("{}{} ", COL_MAP[col], row)
 }
 
 /*
@@ -192,19 +455,21 @@ fn main() {
         println!("{}", position << 63);
         println!("{}", position << 12);
     */
-    
-    // Let's check if the find_set_bit function works correctly or not (for our expected input range)
-    for i in 0..64 {
-        let bit_string = position << i;
-        let calculated_index = find_set_bit(bit_string);
-        if calculated_index != i {
-            println!("Error encountered at {}", i);
+    /* 
+        // Let's check if the find_set_bit function works correctly or not (for our expected input range)
+        for i in 0..64 {
+            let bit_string = position << i;
+            let calculated_index = find_set_bit(bit_string);
+            if calculated_index != i {
+                println!("Error encountered at {}", i);
+            }
         }
-    }
 
-    for i in 0..64 {
-        println!("Square number {} -> {:#?}", i, index_to_position(i));
-    }
+        for i in 0..64 {
+            println!("Square number {} -> {:#?}", i, index_to_position(i));
+        }
+    */
+    let game = Game::initialize();
 
-    println!("Hello, world!");
+    println!("{}", game.to_string());
 }
