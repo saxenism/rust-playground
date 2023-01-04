@@ -12,6 +12,8 @@
     I know that 64 squares can be represented in a 6 bit string (2^6 = 64), but the extra bits will be helpful later on for doing different thing for each piece.
 */
 
+use bitflags::bitflags;
+
 type PiecePosition = u64; // setting an alias for u64
 
 /*
@@ -52,10 +54,34 @@ enum Square {
     Occupied(usize), // This usize is used to denote the piece index.
 }
 
+bitflags! {
+    struct CastlingRights: u8 {
+        const NONE = 0;
+        const WHITEKINGSIDE = 1 << 0;
+        const WHITEQUEENSIDE = 1 << 1;
+        const BLACKKINGSIDE = 1 << 2;
+        const BLACKQUEENSIDE = 1 << 3;
+        const ALL = Self::WHITEKINGSIDE.bits | 
+                    Self::WHITEQUEENSIDE.bits | 
+                    Self::BLACKKINGSIDE.bits | 
+                    Self::BLACKQUEENSIDE.bits;
+    }
+}
+
 // Game type to own the data
+// Initially this was limited to just pieces and squares, but now having studied the FEN string for chessboard representation, we gotta add a few more fields
+// Full move: 1 move from white + 1 move from black
+// Half move: 1 move from any player
+// en_passant target square: This is a square over which a pawn has just passed while moving two squares
+// castling_rights: If neither side has the ability to castle, this field uses the character "-". Otherwise, this field contains one or more letters: "K" if White can castle kingside, "Q" if White can castle queenside, "k" if Black can castle kingside, and "q" if Black can castle queenside.
 struct Game {
     pieces: Vec<Piece>,
-    squares: Vec<Square>
+    squares: Vec<Square>,
+    active_color: Color,
+    castling_rights: CastlingRights,
+    en_passant: Option<PiecePosition>, // Target Square. This is why it is an Option, since either you'll have a square or you won't
+    halfmove_clock: usize, // The number of halfmoves since the last capture or pawn advance, used for the fifty-move rule
+    fullmove_number: usize //  The number of the full moves. It starts at 1 and is incremented after Black's move.
 }
 
 impl Game {
@@ -88,7 +114,15 @@ impl Game {
     }
 
     fn initialize() -> Game {
-        let mut game = Game {pieces: vec![], squares: vec![]};
+        let mut game = Game {
+            pieces: vec![], 
+            squares: vec![],
+            active_color: Color::White,
+            castling_rights: CastlingRights::ALL,
+            en_passant: None,
+            halfmove_clock: 1,
+            fullmove_number: 0
+        };
         let mut piece_index = 0;
 
         let mut color = Color::White;
