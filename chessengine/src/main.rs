@@ -290,6 +290,33 @@ impl Game {
        
        board // return the value of board
     }
+
+    #[allow(non_snake_case)]
+    fn read_FEN(fen: &str) -> Game {
+        let game = Game {
+            pieces: vec![],
+            squares: vec![],
+            active_color: Color::White,
+            castling_rights: CastlingRights::ALL,
+            en_passant: None,
+            halfmove_clock: 1,
+            fullmove_number: 0
+        };
+
+        game
+    }
+
+    // This function will separate 1 string into 2 strings, on the separator character (omitting it)
+    fn split_on(s: &str, sep: char) -> (&str, &str) {
+        for (i, item) in s.chars().enumerate() {
+            if item == sep {
+                return (&s[0..i], &s[i+1..]);
+            }
+        }
+
+        (&s[0..], "")
+    }
+
 }
 
 impl Piece {
@@ -504,6 +531,13 @@ fn main() {
         }
     */
     let game = Game::initialize();
+
+    let fen_str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+    let (first_half, second_half) = Game::split_on(fen_str, '/');
+
+    println!("{}", first_half);
+    println!("{}", second_half);
 
     println!("{}", game.to_string());
 }
