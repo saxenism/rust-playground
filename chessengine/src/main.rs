@@ -336,20 +336,20 @@ impl Game {
             // So, when we start parsing the row from the for loop, we would be doing so in a order which is opposite to the numbering convention of the chessboard
             // squares that we have been following. So, we need to introduce a data structure where we can input data from the front too (VecDeque) so that the first entry becomes the last in game.pieces and game.squares
 
-
             // Now when you get the correctly inferred pieces and squares info from `parse_row`, let's put them in the `game`'s relevant vector.
             for piece in pieces {
                 game.pieces.push(piece);
+                piece_index += 1;
             }
 
             for sq in squares {
                 deque_squares.push_front(sq);
             }
 
-            game.squares = Vec::from(deque_squares);
-
             println!("row: {}", row);
         }
+
+        game.squares = Vec::from(deque_squares);
 
         game
     }
@@ -648,4 +648,5 @@ fn main() {
     println!("{}", game.to_string());
 
     let something = Game::read_FEN(fen_str);
+    println!("{}", something.to_string());
 }
