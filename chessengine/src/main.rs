@@ -13,6 +13,7 @@
 */
 
 use bitflags::bitflags;
+use std::collections::VecDeque;
 
 type PiecePosition = u64; // setting an alias for u64
 
@@ -291,9 +292,10 @@ impl Game {
        board // return the value of board
     }
 
+    // This macro allows functions to have a non-snake case name
     #[allow(non_snake_case)]
     fn read_FEN(fen: &str) -> Game {
-        let game = Game {
+        let mut game = Game {
             pieces: vec![],
             squares: vec![],
             active_color: Color::White,
@@ -303,21 +305,125 @@ impl Game {
             fullmove_number: 0
         };
 
+        let (position, rest) = split_on(fen, ' ');
+
+        let mut deque_squares = VecDeque::new();
+        let mut piece_index = 0;
+        let mut piece_position = 64;
+
+        // Now we want to loop over each row present in the FEN string rep of the game.
+        for row in position.splitn(8, '/' ) { // This will give you each row of the chess board.
+            // Checking if we are getting the split rows from the fen_string as expected or not
+            // println!("row: {}", row);
+
+            piece_position -= 8; //Every time a row is handeled
+            
+            // Since we would like to construct the GAME chess board out of this FEN string row, let's call a parse function for each row
+            let (pieces, squares) = parse_row(&row, piece_index, piece_position);
+
+            // Now the immediate problem that will pop up when you try to implement the `parse_row` function is that the output of rows after `splitn` looks
+            // something like this:
+            /*
+                row: rnbqkbnr
+                row: pppppppp
+                row: 8
+                row: 8
+                row: 8
+                row: 8
+                row: PPPPPPPP
+                row: RNBQKBNR
+            */
+            // So, when we start parsing the row from the for loop, we would be doing so in a order which is opposite to the numbering convention of the chessboard
+            // squares that we have been following. So, we need to introduce a data structure where we can input data from the front too (VecDeque) so that the first entry becomes the last in game.pieces and game.squares
+
+
+            // Now when you get the correctly inferred pieces and squares info from `parse_row`, let's put them in the `game`'s relevant vector.
+            for piece in pieces {
+                game.pieces.push(piece);
+            }
+
+            for sq in squares {
+                deque_squares.push_front(sq);
+            }
+
+            game.squares = Vec::from(deque_squares);
+
+            println!("row: {}", row);
+        }
+
         game
     }
 
+}
+
+    fn parse_row(
+        row: &str,
+        mut piece_index: usize,
+        mut piece_position: usize
+    ) -> (Vec<Piece>, VecDeque<Square>) {
+        let mut pieces = Vec::new();
+        let mut squares = VecDeque::new();
+
+        let mut color;
+
+        // Defining a local macro, which is just a function expanded at compile time itself.
+        // It has to be local because we want it to be able to access the local variables
+        // It is needed to take care of the repeated code for matching ch to chess pieces
+        macro_rules! add_piece {
+            ($piece_type: ident) => {
+                {
+                    let piece = Piece {
+                        color: color,
+                        position: (1 as u64) << piece_position,
+                        piece_type: PieceType::$piece_type
+                    };
+                    let square = Square::Occupied(piece_index);
+                    pieces.push(piece);
+                    squares.push_front(square);
+                    piece_position += 1;
+                    piece_index += 1;
+                }
+            };
+        }
+
+        for ch in row.chars() {
+            let is_upper = ch.is_ascii_uppercase();
+            color = if is_upper {Color::White} else {Color::Black};
+            match ch.to_ascii_lowercase() {
+                'r' => add_piece!(Rook),
+                'n' => add_piece!(Knight),
+                'b' => add_piece!(Bishop),
+                'q' => add_piece!(Queen),
+                'k' => add_piece!(King),
+                'p' => add_piece!(Pawn),
+                num => {
+                    match num.to_digit(10) { // 10 -> base 10 numbers (decimal numbers) {
+                        None => panic!("Invalid Input: {}", num),
+                        Some(number) => for i in 0..number {
+                            squares.push_front(Square::Empty);
+                            piece_position += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        (pieces, squares)
+    }
+
     // This function will separate 1 string into 2 strings, on the separator character (omitting it)
+    // Example: s = "ABCDEF", sep = 'C' -> ("AB", "DEF") // The separator character is dropped.
     fn split_on(s: &str, sep: char) -> (&str, &str) {
+        // .enumerate is used to get both i and item, which is the index as well as the value of elements present in string s.
+        // Simply calling for i in s.chars() would have returned the values of the subsequent chars in the string s.
         for (i, item) in s.chars().enumerate() {
             if item == sep {
                 return (&s[0..i], &s[i+1..]);
             }
         }
 
-        (&s[0..], "")
+        (&s[0..], "") // If the separator was never encountered, just return the full string and an empty string.
     }
-
-}
 
 impl Piece {
     fn to_string(&self) -> String {
@@ -534,10 +640,12 @@ fn main() {
 
     let fen_str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-    let (first_half, second_half) = Game::split_on(fen_str, '/');
+    let (first_row, rest) = split_on(fen_str, '/');
 
-    println!("{}", first_half);
-    println!("{}", second_half);
+    println!("{}", first_row);
+    println!("{}", rest);
 
     println!("{}", game.to_string());
+
+    let something = Game::read_FEN(fen_str);
 }
