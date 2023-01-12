@@ -6,7 +6,36 @@ use std::vec;
 
 use solang_parser::pt;
 
-#[derive(Debug, Hash, Eq, PartialEq)]
+#[derive(Clone)]
+enum Node {
+    SourceUnit(pt::SourceUnit),
+    SourceUnitPart(pt::SourceUnitPart)
+}
+
+impl Node {
+    pub fn as_identifier(&self) -> Identifier {
+        match self {
+            Self::SourceUnit(_) => return Identifier::SourceUnit,
+            Self::SourceUnitPart(source_unit_part) => {
+                return convert_source_unit_into_taintoooor_identifier(source_unit_part)
+            }
+        }
+    }
+}
+
+impl Into<Node> for pt::SourceUnitPart {
+    fn into(self) -> Node {
+        Node::SourceUnitPart(self)
+    }
+}
+
+impl Into<Node> for pt::SourceUnit {
+    fn into(self) -> Node {
+        Node::SourceUnit(self)
+    }
+}
+
+#[derive(Hash, Eq, PartialEq)]
 enum Identifier {
     // from the solang_parser::pt module
     Annotation,
@@ -29,7 +58,7 @@ enum Identifier {
 }
 
 // This function is required to be able to parse the abstract syntax tree and get the desired identifier out of it.
-fn convert_source_unit_into_taintoooor_identifer(
+fn convert_source_unit_into_taintoooor_identifier(
     source_unit_part: &pt::SourceUnitPart
 ) -> Identifier {
     match source_unit_part {
@@ -53,31 +82,28 @@ fn get_identifier_from_node(identifier: Identifier, node: Node) -> Vec<Node> {
     let mut target_set = HashSet::new();
     target_set.insert(identifier);
 
-    return walk_node_for_targets(&target_set, node);
+    return traverse_node_for_identifiers(&target_set, node);
 }
 
-fn walk_node_for_targets(targets: &HashSet<Identifier>, node: Node) -> Vec<Node> {
+fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) -> Vec<Node> {
     let mut matches = vec![];
 
+    if identifiers.contains(&node.as_identifier()) {
+        matches.push(node.clone());
+    }
+
+    match node {
+        Node::SourceUnit(source_unit) => {
+            for source_unit_part in source_unit.0 {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, source_unit_part.into()));
+            }
+        },
+        Node::SourceUnitPart(source_unit_part) => {
+            
+        }
+    }
+
     matches
-}
-
-
-enum Node {
-    SourceUnit(pt::SourceUnit),
-    SourceUnitPart(pt::SourceUnitPart)
-}
-
-impl Into<Node> for pt::SourceUnitPart {
-    fn into(self) -> Node {
-        Node::SourceUnitPart(self)
-    }
-}
-
-impl Into<Node> for pt::SourceUnit {
-    fn into(self) -> Node {
-        Node::SourceUnit(self)
-    }
 }
 
 fn parse_contract() {
@@ -106,8 +132,8 @@ fn parse_contract() {
 
     let source_unit_items = source_unit.0;
 
-    for (index, item )in source_unit_items.iter().enumerate() {
-        println!("{:#?}", item.loc());
+    for item in source_unit_items.iter() {
+        println!("{:#?}", item);
     }
 
 }
@@ -121,6 +147,6 @@ fn main() {
 
     parse_contract();
 
-    let is_keyword = solang_parser::lexer::is_keyword("struct");
-    println!("{}", is_keyword);
+    // let is_keyword = solang_parser::lexer::is_keyword("struct");
+    // println!("{}", is_keyword);
 }
