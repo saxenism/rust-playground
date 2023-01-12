@@ -124,12 +124,3 @@ fn main() {
     let is_keyword = solang_parser::lexer::is_keyword("struct");
     println!("{}", is_keyword);
 }
-
-/*
-pub fn extract_target_from_node(target: Target, node: Node) -> Vec<Node> {
-    let mut target_set = HashSet::new();
-    target_set.insert(target);
-
-    return walk_node_for_targets(&target_set, node);
-}
- */
