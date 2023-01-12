@@ -18,9 +18,12 @@ pub fn view_example_contract() {
 pub fn view_parsed_example_contract() {
     let contract_text = r#"        
     pragma solidity ^0.8.16;
+
+    // This contract is written by Marvin's soldiers
+    
     contract SimpleStore {
         uint x;
-        function set(uint newValue) {
+        function set(uint newValue) public {
             x = newValue;
         }
         
