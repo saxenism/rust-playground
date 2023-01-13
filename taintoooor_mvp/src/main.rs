@@ -6,7 +6,7 @@ use std::vec;
 
 use solang_parser::pt;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 enum Node {
     Statement(pt::Statement),
     Expression(pt::Expression),
@@ -441,6 +441,7 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                 }
             }
             _ => {
+            /*
                 let warning_text = r#"
                 This module currently does not support discovery of the following SourceUnitPart identifiers:
                 1. Pragma Directive
@@ -450,6 +451,7 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                 5. Annotation
                 "#;
                 println!("{}", warning_text);
+            */
             }
         },
         Node::Expression(expression) => match expression {
@@ -754,6 +756,7 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                 }
             },
             _ => {
+            /*
                 let warning_text = r#"
                     This module currently does not support discovery of the following Expression identifiers:
                     1. Address literal
@@ -767,6 +770,7 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                     9. Variable
                 "#;
                 println!("{}", warning_text);
+            */
             }
         },
         Node::Statement(statement) => match statement {
@@ -899,6 +903,7 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                 }
             },
             _ => {
+            /*
                 let warning_text = r#"
                     This module currently does not support discovery of the following Statement identifiers:
                     1. Assembly Block
@@ -906,6 +911,7 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                     3. Break
                 "#;
                 println!("{}", warning_text);
+            */
             }
         },
         Node::ContractPart(contract_part) => match contract_part {
@@ -989,12 +995,14 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                 }
             },
             _ => {
+            /*
                 let warning_text = r#"
                     This module currently does not support discovery of the following Expression identifiers:
                     1. Stray Semicolon
                     2. Enum Definition
                 "#;
                 println!("{}", warning_text);
+            */
             }
         },
     }
@@ -1034,15 +1042,49 @@ fn parse_contract() {
 
 }
 
+fn test_function() {
+    let contract_text:&str = r#"        
+    pragma solidity ^0.8.16;
+
+    // This contract is written by Marvin's soldiers
+
+    contract SimpleStore {
+        uint x;
+
+        // Should probably change this to onlyOwner from public
+        function set(uint newValue) public {
+            x = newValue;
+        }
+        
+        // Can be declared as view
+        function get() returns (uint) {
+            return x;
+        }
+    }"#;
+
+    let source_unit = solang_parser::parse(contract_text, 0).unwrap().0;
+
+    let target_nodes = get_identifier_from_node(Identifier::FunctionDefinition, source_unit.into());
+    if target_nodes.len() == 0 {
+        println!("Not Present in the contract");
+    } else {
+        for item in target_nodes {
+            println!("{:#?}", item.is_contract_part());
+        }
+    }
+}
+
 fn main() {
     // example::view_example_contract();
 
-    example::view_parsed_example_contract();
+    //example::view_parsed_example_contract();
 
     // report_generation::generate_report();
 
-    parse_contract();
+    //parse_contract();
 
     // let is_keyword = solang_parser::lexer::is_keyword("struct");
     // println!("{}", is_keyword);
+
+    test_function();
 }
