@@ -158,7 +158,7 @@ enum Identifier {
     BitwiseAnd,
     BitwiseOr,
     BitwiseXor,
-    ConditionalOperator,
+    Ternary, //called `ConditionalOperator` in the newer versions,
     Complement,
     Delete,
     Divide,
@@ -203,7 +203,7 @@ enum Identifier {
     This,
 
     // from the solang_parser::pt module
-    Annotation,
+    //Annotation, => This is included in the newer versions
     SourceUnit,
     ContractDefinition,
     EnumDefinition,
@@ -227,7 +227,6 @@ fn convert_source_unit_into_taintoooor_identifier(
     source_unit_part: &pt::SourceUnitPart
 ) -> Identifier {
     match source_unit_part {
-        pt::SourceUnitPart::Annotation(_) => Identifier::Annotation,
         pt::SourceUnitPart::ContractDefinition(_) => Identifier::ContractDefinition,
         pt::SourceUnitPart::EnumDefinition(_) => Identifier::EnumDefinition,
         pt::SourceUnitPart::ErrorDefinition(_) => Identifier::ErrorDefinition,
@@ -247,7 +246,9 @@ fn convert_contract_part_into_taintoooor_identifier(
     contract_part: &pt::ContractPart
 ) -> Identifier {
     match contract_part {
-        pt::ContractPart::Annotation(_) => Identifier::Annotation,
+        // pt::ContractPart::Annotation(_) => Identifier::Annotation,
+        // No need to worry about Annotation, it is included in the newer versions
+
         pt::ContractPart::EnumDefinition(_) => Identifier::EnumDefinition,
         pt::ContractPart::ErrorDefinition(_) => Identifier::ErrorDefinition,
         pt::ContractPart::EventDefinition(_) => Identifier::EventDefinition,
@@ -284,7 +285,7 @@ fn convert_expressions_into_taintoooor_identifier(
         pt::Expression::BitwiseOr(_, _, _) => Identifier::BitwiseOr,
         pt::Expression::BitwiseXor(_, _, _) => Identifier::BitwiseXor,
         pt::Expression::Complement(_, _) => Identifier::Complement,
-        pt::Expression::ConditionalOperator(_, _, _, _) => Identifier::ConditionalOperator,
+        pt::Expression::Ternary(_, _, _, _) => Identifier::Ternary,
         pt::Expression::Delete(_, _) => Identifier::Delete,
         pt::Expression::Divide(_, _, _) => Identifier::Divide,
         pt::Expression::Equal(_, _, _) => Identifier::Equal,
@@ -410,7 +411,9 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                 }
                 // Return params
                 for(_, return_param) in box_function_definition.returns {
-                    if return_param.append(&mut traverse_node_for_identifiers(identifiers, return_param.unwrap().ty.into()));
+                    if return_param.is_some() {
+                        matches.append(&mut traverse_node_for_identifiers(identifiers, return_param.unwrap().ty.into()));
+                    }
                 }
                 // Function Body
                 if box_function_definition.body.is_some() {
@@ -713,6 +716,43 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                 }
                 _ => {}
             },
+            pt::Expression::Ternary(_, box_expression, box_expression_1, box_expression_2) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, box_expression.into()));
+                matches.append(&mut traverse_node_for_identifiers(identifiers, box_expression_1.into()));
+                matches.append(&mut traverse_node_for_identifiers(identifiers, box_expression_2.into()));
+            },
+            pt::Expression::ArraySlice(
+                _,
+                box_expression,
+                option_box_expression,
+                option_box_expression_1,
+            ) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, box_expression.into()));
+
+                if option_box_expression.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_box_expression.unwrap().into(),
+                    ));
+                }
+
+                if option_box_expression_1.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_box_expression_1.unwrap().into(),
+                    ));
+                }
+            },
+            pt::Expression::ArraySubscript(_, box_expression, option_box_expression) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, box_expression.into()));
+
+                if option_box_expression.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_box_expression.unwrap().into(),
+                    ));
+                }
+            },
             _ => {
                 let warning_text = r#"
                     This module currently does not support discovery of the following Expression identifiers:
@@ -728,8 +768,235 @@ fn traverse_node_for_identifiers(identifiers: &HashSet<Identifier>, node: Node) 
                 "#;
                 println!("{}", warning_text);
             }
+        },
+        Node::Statement(statement) => match statement {
+            pt::Statement::Args(_, named_arguments) => {
+                for argument in named_arguments {
+                    matches.append(&mut traverse_node_for_identifiers(identifiers, argument.expr.into()));
+                }
+            },
+            pt::Statement::Return(_, option_expression) => {
+                if option_expression.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_expression.unwrap().into(),
+                    ));
+                }
+            },
+            pt::Statement::Revert(_, _, vec_expression) => {
+                for expression in vec_expression {
+                    matches.append(&mut traverse_node_for_identifiers(identifiers, expression.into()));
+                }
+            },
+            pt::Statement::Emit(_, expression) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, expression.into()));
+            },
+            pt::Statement::RevertNamedArgs(_, _, vec_named_arguments) => {
+                for named_argument in vec_named_arguments {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        named_argument.expr.into(),
+                    ));
+                }
+            },
+            pt::Statement::Expression(_, expression) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, expression.into()));
+            },
+            pt::Statement::VariableDefinition(_, variable_declaration, option_expression) => {
+                matches.append(&mut traverse_node_for_identifiers(
+                    identifiers,
+                    variable_declaration.ty.into(),
+                ));
 
-        }
+                if option_expression.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_expression.unwrap().into(),
+                    ));
+                }
+            },
+            pt::Statement::Block {
+                loc: _,
+                unchecked: _,
+                statements,
+            } => {
+                for statement in statements {
+                    matches.append(&mut traverse_node_for_identifiers(identifiers, statement.into()));
+                }
+            },
+            pt::Statement::If(_, expression, box_statement, option_box_statement) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, expression.into()));
+
+                matches.append(&mut traverse_node_for_identifiers(identifiers, box_statement.into()));
+
+                if option_box_statement.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_box_statement.unwrap().into(),
+                    ));
+                }
+            },
+            pt::Statement::While(_, expression, box_statement) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, expression.into()));
+
+                matches.append(&mut traverse_node_for_identifiers(identifiers, box_statement.into()));
+            },
+            pt::Statement::For(
+                _,
+                option_box_statement,
+                option_box_expression,
+                option_box_statement_1,
+                option_box_statement_2,
+            ) => {
+                if option_box_statement.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_box_statement.unwrap().into(),
+                    ));
+                }
+
+                if option_box_expression.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_box_expression.unwrap().into(),
+                    ));
+                }
+
+                if option_box_statement_1.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_box_statement_1.unwrap().into(),
+                    ));
+                }
+                if option_box_statement_2.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        option_box_statement_2.unwrap().into(),
+                    ));
+                }
+            },
+            pt::Statement::DoWhile(_, box_statement, expression) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, box_statement.into()));
+
+                matches.append(&mut traverse_node_for_identifiers(identifiers, expression.into()));
+            },
+            pt::Statement::Try(_, expression, option_paramlist_box_statement, _) => {
+                matches.append(&mut traverse_node_for_identifiers(identifiers, expression.into()));
+
+                if option_paramlist_box_statement.is_some() {
+                    let (paramlist, box_statement) = option_paramlist_box_statement.unwrap();
+
+                    for (_, option_param) in paramlist {
+                        if option_param.is_some() {
+                            matches.append(&mut traverse_node_for_identifiers(
+                                identifiers,
+                                option_param.unwrap().ty.into(),
+                            ));
+                        }
+                    }
+
+                    matches.append(&mut traverse_node_for_identifiers(identifiers, box_statement.into()));
+                }
+            },
+            _ => {
+                let warning_text = r#"
+                    This module currently does not support discovery of the following Statement identifiers:
+                    1. Assembly Block
+                    2. Continue
+                    3. Break
+                "#;
+                println!("{}", warning_text);
+            }
+        },
+        Node::ContractPart(contract_part) => match contract_part {
+            pt::ContractPart::ErrorDefinition(box_error_definition) => {
+                for error_parameter in box_error_definition.fields {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        error_parameter.ty.into(),
+                    ));
+                }
+            },
+            pt::ContractPart::EventDefinition(box_event_definition) => {
+                for event_parameter in box_event_definition.fields {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        event_parameter.ty.into(),
+                    ));
+                }
+            },
+            pt::ContractPart::FunctionDefinition(box_function_definition) => {
+                //traverse params for identifiers
+                for (_, option_parameter) in box_function_definition.params {
+                    if option_parameter.is_some() {
+                        matches.append(&mut traverse_node_for_identifiers(
+                            identifiers,
+                            option_parameter.unwrap().ty.into(),
+                        ));
+                    }
+                }
+                //traverse return params for identifiers
+                for (_, option_parameter) in box_function_definition.returns {
+                    if option_parameter.is_some() {
+                        matches.append(&mut traverse_node_for_identifiers(
+                            identifiers,
+                            option_parameter.unwrap().ty.into(),
+                        ));
+                    }
+                }
+
+                //traverse the function body for identifiers
+                if box_function_definition.body.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        box_function_definition.body.unwrap().into(),
+                    ));
+                }
+            },
+            pt::ContractPart::StructDefinition(box_struct_definition) => {
+                for variable_declaration in box_struct_definition.fields {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        variable_declaration.ty.into(),
+                    ));
+                }
+            },
+            pt::ContractPart::TypeDefinition(box_type_definition) => {
+                matches.append(&mut traverse_node_for_identifiers(
+                    identifiers,
+                    box_type_definition.ty.into(),
+                ));
+            },
+            pt::ContractPart::Using(box_using) => {
+                if box_using.ty.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        box_using.ty.unwrap().into(),
+                    ));
+                }
+            },
+            pt::ContractPart::VariableDefinition(box_variable_definition) => {
+                matches.append(&mut traverse_node_for_identifiers(
+                    identifiers,
+                    box_variable_definition.ty.into(),
+                ));
+
+                if box_variable_definition.initializer.is_some() {
+                    matches.append(&mut traverse_node_for_identifiers(
+                        identifiers,
+                        box_variable_definition.initializer.unwrap().into(),
+                    ));
+                }
+            },
+            _ => {
+                let warning_text = r#"
+                    This module currently does not support discovery of the following Expression identifiers:
+                    1. Stray Semicolon
+                    2. Enum Definition
+                "#;
+                println!("{}", warning_text);
+            }
+        },
     }
 
     matches
