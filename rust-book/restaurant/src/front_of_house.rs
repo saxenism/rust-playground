@@ -1,0 +1,1 @@
+pub mod hosting; // This tells Rust to define the hosting module here but to get the contents of this module from a file with the same name under the directory of the name front_of_house (which is supposed to contain all the modules inside of the front_of_house module)
