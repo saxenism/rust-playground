@@ -48,4 +48,15 @@ fn main() {
         }
     }
 
+    // How to iterate over a vector
+    for i in &v {
+        println!("{}", i);
+    }
+
+    // How to make changes over a vector? Take a mutable reference
+    // And since taking the mutable and immutable reference of the same piece of data is not legal in Rust, we'll use another vector here
+    for i in &mut v1 {
+        *i += 50;
+        println!("{}", i);
+    }
 }
