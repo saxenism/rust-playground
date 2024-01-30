@@ -1,3 +1,6 @@
+pub mod strings;
+pub mod hashmaps;
+
 fn main() {
     let mut v1: Vec<i32> = Vec::new();
     v1.push(1);
@@ -59,4 +62,11 @@ fn main() {
         *i += 50;
         println!("{}", i);
     }
+
+    strings::main();
+    strings::append();
+    strings::isolating_characters_from_string();
+
+    hashmaps::main();
+    hashmaps::create_mapping_of_frequency_of_words();
 }
