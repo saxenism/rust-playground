@@ -41,4 +41,9 @@ fn main() {
     // };
     // The above code is equivalent to:
     let file = File::open("hello.txt").expect("Failed to open hello.txt");
+    // The `?` operator is very similar to this `expect`/`unwrap` in the sense that if the function call
+    // goes through as expected then there is no issues, but incases there is an error, the program exits early
+
+    // The use of expect and unwrap etc is not promoted in serious codebases as proper error-handling along with
+    // proper error propagation is expected.
 }
