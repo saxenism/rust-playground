@@ -1,5 +1,7 @@
 // Traits allow us to define a set of methods that are shared across different types
 
+use std::fmt::{Debug, Display};
+
 pub struct NewsArticle {
     pub author: String,
     pub headline: String,
@@ -64,3 +66,39 @@ fn main() {
     println!("Article Summary: {}", article.summarize());
 
 }
+
+// This function takes in a function argument of any type that implements the trait Summary
+// pub fn notify(item: &impl Summary) {
+//     println!("Breaking news! {}", item.summarize());
+// }
+
+// Although the above function declaration is valid, it is syntactical sugar for the following syntax:
+pub fn notify<T:Summary>(item: &T) {
+    println!("Breaking News! {}", item.summarize());
+}
+
+// Another example on how this syntactic sugar works
+fn some_function <T:Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {
+    23
+}
+
+fn some_function_2<T, U>(t: &T, u: &U) -> i32 
+    where T: Display + Clone,
+          U: Clone + Debug
+{33}
+
+// This syntax means that this function will return some type that implements the Summary trait.
+fn returns_summarizable() -> impl Summary {
+    Tweet {
+        username: String::from("asd"),
+        content: String::from("asdas"),
+        reply: false,
+        retweet: false
+    }
+}
+
+//We can implement traits on a type that implements another trait
+// Example:
+// impl<T: Display> ToString for T{
+//     //
+// }
